@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 )
+
 // --- 定数・構造体 ---
 
 type Card struct {
@@ -17,10 +18,10 @@ type Card struct {
 }
 
 type Player struct {
-	Name  string
-	Hand  []Card
-	Chips int
-	IsCPU bool
+	Name   string
+	Hand   []Card
+	Chips  int
+	IsCPU  bool
 	Folded bool
 }
 
@@ -119,7 +120,12 @@ func playRound(roundNum int, p1 *Player, p2 *Player) {
 		printTable(phase, p1, p2, board, pot)
 
 		// ベットラウンド（降りたら即終了）
-		if !bettingRound(p1, p2, &pot, phase) {
+		if !bettingRound(p1, p2, &pot, phase, board) {
+			// ★★★ ここを変更しました！ ★★★
+			// 誰かがフォールドした場合でも、最後に手札を公開する
+			fmt.Println("\n--- 手札公開 (Fold) ---")
+			fmt.Printf("YOU: %v\n", p1.Hand)
+			fmt.Printf("CPU: %v\n", p2.Hand)
 			return 
 		}
 		
@@ -145,7 +151,8 @@ func printTable(phase string, p1, p2 *Player, board []Card, pot int) {
 }
 
 // ベット処理（戻り値 false = 誰かが降りてラウンド終了）
-func bettingRound(p1, p2 *Player, pot *int, phase string) bool {
+// ★引数に board []Card を追加しました
+func bettingRound(p1, p2 *Player, pot *int, phase string, board []Card) bool {
 	// 簡易的なベットロジック（1ターンずつ行動）
 	// 人間の行動
 	action, amount := getPlayerAction(p1, *pot)
@@ -164,7 +171,9 @@ func bettingRound(p1, p2 *Player, pot *int, phase string) bool {
 	}
 
 	// CPUの行動（AI）
-	cpuAction, cpuAmount := getCpuAction(p2, *pot, amount, phase)
+	// ★ここでAIに board を渡しています
+	cpuAction, cpuAmount := getCpuAction(p2, *pot, amount, phase, board)
+	
 	if cpuAction == "FOLD" {
 		fmt.Println("CPUが降りました！あなたの勝ちです！")
 		p1.Chips += *pot
@@ -206,33 +215,22 @@ func getPlayerAction(p *Player, currentPot int) (string, int) {
 	}
 }
 
-// 簡易AI: 強いカードや後半のフェーズなら強気にでる
-func getCpuAction(p *Player, pot int, playerBet int, phase string) (string, int) {
-	// 1. 手札の強さを簡易評価 (数字の合計)
-	score := p.Hand[0].Val + p.Hand[1].Val
+// getCpuAction : ここで ai_logic.go の頭脳を使います！
+// ★引数に board []Card を追加しました
+func getCpuAction(p *Player, pot int, playerBet int, phase string, board []Card) (string, int) {
+	fmt.Print("CPUが思考中...")
 	
-	// 2. 確率でアクション決定
-	randVal := rand.Intn(100)
+	// プレイヤーのベット額に合わせて「コールに必要な額」を計算
+	toCall := playerBet 
 
-	// 相手がベットしてきた場合
-	if playerBet > 0 {
-		if score < 10 && randVal < 80 { // 手札が弱ければ80%降りる
-			return "FOLD", 0
-		}
-		// コールする（相手の額に合わせる処理は省略し、とりあえず同額払うとする）
-		bet := playerBet
-		if p.Chips < bet { bet = p.Chips }
-		return "CALL", bet
-	}
+	// ★ここでAIロジック（DecideCpuAction）を呼び出すときに board を渡します
+	action, amount := DecideCpuAction(p.Hand, board, pot, toCall)
+	
+	// ちょっとウェイトを入れて「考えている感」を出す
+	time.Sleep(1 * time.Second)
+	fmt.Println(" 決定！")
 
-	// 相手がチェックの場合
-	if score > 20 || randVal > 70 { // 手札が強いか、30%の確率でレイズ
-		bet := 50
-		if p.Chips < bet { bet = p.Chips }
-		return "RAISE", bet
-	}
-
-	return "CHECK", 0
+	return action, amount
 }
 
 // showdown : 手札を公開して勝敗を決める
@@ -247,9 +245,6 @@ func showdown(p1, p2 *Player, board []Card, pot int) {
 	fmt.Printf("CPU: %v  => 【%s】\n", p2.Hand, p2HandName)
 
 	// 勝敗判定
-	// 1. 役のランク（ストレートフラッシュ > ... > ハイカード）で比較
-	// 2. 同じランクなら、詳細スコア（数字の強さ）で比較
-	
 	win := false
 	draw := false
 
