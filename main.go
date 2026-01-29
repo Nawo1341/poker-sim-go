@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
-
 // --- 定数・構造体 ---
 
 type Card struct {
@@ -237,25 +235,48 @@ func getCpuAction(p *Player, pot int, playerBet int, phase string) (string, int)
 	return "CHECK", 0
 }
 
+// showdown : 手札を公開して勝敗を決める
 func showdown(p1, p2 *Player, board []Card, pot int) {
 	fmt.Println("\n=== SHOW DOWN ===")
-	fmt.Printf("YOU: %v  (Score: %d)\n", p1.Hand, p1.Hand[0].Val+p1.Hand[1].Val)
-	fmt.Printf("CPU: %v  (Score: %d)\n", p2.Hand, p2.Hand[0].Val+p2.Hand[1].Val)
+	
+	// 役判定ロジックを呼び出し
+	p1HandName, p1Rank, p1Score := EvaluateHand(p1.Hand, board)
+	p2HandName, p2Rank, p2Score := EvaluateHand(p2.Hand, board)
 
-	// 簡易勝敗判定（カードの数字の合計が大きい方が勝ち）
-	// 本来はフラッシュやストレートの判定ロジックが必要
-	score1 := p1.Hand[0].Val + p1.Hand[1].Val
-	score2 := p2.Hand[0].Val + p2.Hand[1].Val
+	fmt.Printf("YOU: %v  => 【%s】\n", p1.Hand, p1HandName)
+	fmt.Printf("CPU: %v  => 【%s】\n", p2.Hand, p2HandName)
 
-	if score1 > score2 {
-		fmt.Printf("あなたの勝ち！ Pot($%d)を獲得！\n", pot)
-		p1.Chips += pot
-	} else if score2 > score1 {
-		fmt.Printf("CPUの勝ち... Pot($%d)を奪われました。\n", pot)
-		p2.Chips += pot
+	// 勝敗判定
+	// 1. 役のランク（ストレートフラッシュ > ... > ハイカード）で比較
+	// 2. 同じランクなら、詳細スコア（数字の強さ）で比較
+	
+	win := false
+	draw := false
+
+	if p1Rank > p2Rank {
+		win = true
+	} else if p1Rank < p2Rank {
+		win = false
 	} else {
+		// 役が同じ場合、数字で比較
+		if p1Score > p2Score {
+			win = true
+		} else if p1Score < p2Score {
+			win = false
+		} else {
+			draw = true
+		}
+	}
+
+	if draw {
 		fmt.Printf("引き分け！ Pot($%d)を分け合います。\n", pot)
 		p1.Chips += pot / 2
 		p2.Chips += pot / 2
+	} else if win {
+		fmt.Printf("あなたの勝ち！ Pot($%d)を獲得！\n", pot)
+		p1.Chips += pot
+	} else {
+		fmt.Printf("CPUの勝ち... Pot($%d)を奪われました。\n", pot)
+		p2.Chips += pot
 	}
 }
