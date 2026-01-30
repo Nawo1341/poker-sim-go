@@ -24,16 +24,14 @@ func DecideCpuAction(cpuHand []Card, board []Card, pot int, toCall int) (string,
 	
 	// 圧倒的に強い場合 (勝率80%以上) -> レイズしてバリューを取りに行く
 	if winRate > 0.8 {
-		raiseAmount := pot / 2 // ポットの半分くらいをレイズ
-		if raiseAmount < toCall*2 { raiseAmount = toCall * 2 } // ミニマムレイズ
-		return "RAISE", raiseAmount
+		return "RAISE", 50
 	}
 
 	// 勝率が必要勝率を上回っている -> コール（またはチェック）
 	if winRate >= requiredWinRate {
 		// かなり強い (勝率60%以上) ならレイズ頻度を上げる
 		if winRate > 0.6 && rand.Float64() < 0.5 {
-			return "RAISE", pot / 3
+			return "RAISE", 50
 		}
 		if toCall == 0 {
 			return "CHECK", 0
@@ -48,7 +46,7 @@ func DecideCpuAction(cpuHand []Card, board []Card, pot int, toCall int) (string,
 	}
 	// 10%の確率でブラフのレイズ
 	if rand.Float64() < 0.1 {
-		return "RAISE", pot / 2
+		return "RAISE", 50
 	}
 
 	return "FOLD", 0
