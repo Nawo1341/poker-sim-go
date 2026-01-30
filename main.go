@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
+	"strings" // ← これを復活させてください！
 	"time"
 )
 
@@ -119,13 +119,14 @@ func playRound(roundNum int, p1 *Player, p2 *Player) {
 		// 状況表示
 		printTable(phase, p1, p2, board, pot)
 
-		// ベットラウンド（降りたら即終了）
+// ... (playRound関数の中の bettingRound 判定部分) ...
+
 		if !bettingRound(p1, p2, &pot, phase, board) {
-			// ★★★ ここを変更しました！ ★★★
-			// 誰かがフォールドした場合でも、最後に手札を公開する
 			fmt.Println("\n--- 手札公開 (Fold) ---")
-			fmt.Printf("YOU: %v\n", p1.Hand)
-			fmt.Printf("CPU: %v\n", p2.Hand)
+			fmt.Println("YOU:")
+			printCardsAA(p1.Hand)
+			fmt.Println("CPU:")
+			printCardsAA(p2.Hand)
 			return 
 		}
 		
@@ -142,12 +143,28 @@ func playRound(roundNum int, p1 *Player, p2 *Player) {
 
 // 状況を表示する
 func printTable(phase string, p1, p2 *Player, board []Card, pot int) {
-	fmt.Println("\n--------------------------------")
-	fmt.Printf("PHASE: %s  |  POT: $%d\n", phase, pot)
-	fmt.Printf("BOARD: %v\n", board)
-	fmt.Printf("YOU  : %v  (Chips: $%d)\n", p1.Hand, p1.Chips)
-	fmt.Printf("CPU  : [??] [??]  (Chips: $%d)\n", p2.Chips) // CPUは見せない
-	fmt.Println("--------------------------------")
+	fmt.Println("\n========================================")
+	fmt.Printf("PHASE: %-10s |  POT: $%d\n", phase, pot)
+	fmt.Println("========================================")
+
+	// CPUの手札（裏向き表示）
+	fmt.Printf("CPU  (Chips: $%d)\n", p2.Chips)
+	printHiddenHandAA(2) 
+
+	fmt.Println("\n------------- BOARD -------------")
+	// 場のカード
+	if len(board) > 0 {
+		printCardsAA(board)
+	} else {
+		fmt.Println("(まだカードはありません)")
+	}
+	fmt.Println("---------------------------------")
+
+	// 自分の手札
+	fmt.Printf("YOU  (Chips: $%d)\n", p1.Chips)
+	printCardsAA(p1.Hand)
+	
+	fmt.Println("========================================")
 }
 
 // ベット処理（戻り値 false = 誰かが降りてラウンド終了）
@@ -233,17 +250,21 @@ func getCpuAction(p *Player, pot int, playerBet int, phase string, board []Card)
 	return action, amount
 }
 
-// showdown : 手札を公開して勝敗を決める
 func showdown(p1, p2 *Player, board []Card, pot int) {
-	fmt.Println("\n=== SHOW DOWN ===")
+	fmt.Println("\n\n################ SHOW DOWN ################")
 	
-	// 役判定ロジックを呼び出し
-	p1HandName, p1Rank, p1Score := EvaluateHand(p1.Hand, board)
-	p2HandName, p2Rank, p2Score := EvaluateHand(p2.Hand, board)
+	p1Name, p1Rank, p1Score := EvaluateHand(p1.Hand, board)
+	p2Name, p2Rank, p2Score := EvaluateHand(p2.Hand, board)
 
-	fmt.Printf("YOU: %v  => 【%s】\n", p1.Hand, p1HandName)
-	fmt.Printf("CPU: %v  => 【%s】\n", p2.Hand, p2HandName)
+	fmt.Printf("YOU: 【%s】\n", p1Name)
+	printCardsAA(p1.Hand)
+	
+	fmt.Printf("CPU: 【%s】\n", p2Name)
+	printCardsAA(p2.Hand)
 
+	fmt.Println("###########################################")
+
+    // ... (以下の勝敗判定ロジックはそのまま) ...
 	// 勝敗判定
 	win := false
 	draw := false
