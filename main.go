@@ -62,10 +62,10 @@ func deal(deck *[]Card, n int) []Card {
 
 func main() {
 	fmt.Println("=== TEXAS HOLD'EM POKER SIMULATOR ===")
-	
+
 	// プレイヤー初期設定
-	human := &Player{Name: "You", Chips: 1000, IsCPU: false}
-	cpu := &Player{Name: "CPU", Chips: 1000, IsCPU: true}
+	human := &Player{Name: "You", Chips: 500, IsCPU: false}
+	cpu := &Player{Name: "CPU", Chips: 500, IsCPU: true}
 
 	// ゲームループ（どちらかのチップが尽きるまで）
 	round := 1
@@ -107,7 +107,7 @@ func playRound(roundNum int, p1 *Player, p2 *Player) {
 
 	// 各フェーズの実行
 	phases := []string{"Pre-Flop", "Flop", "Turn", "River"}
-	
+
 	for i, phase := range phases {
 		// カードをめくる処理
 		if phase == "Flop" {
@@ -119,7 +119,7 @@ func playRound(roundNum int, p1 *Player, p2 *Player) {
 		// 状況表示
 		printTable(phase, p1, p2, board, pot)
 
-// ... (playRound関数の中の bettingRound 判定部分) ...
+		// ... (playRound関数の中の bettingRound 判定部分) ...
 
 		if !bettingRound(p1, p2, &pot, phase, board) {
 			fmt.Println("\n--- 手札公開 (Fold) ---")
@@ -127,9 +127,9 @@ func playRound(roundNum int, p1 *Player, p2 *Player) {
 			printCardsAA(p1.Hand)
 			fmt.Println("CPU:")
 			printCardsAA(p2.Hand)
-			return 
+			return
 		}
-		
+
 		// どちらかがAll-inしてたら以降のベットはスキップなどの処理は今回は省略
 		if i < 3 {
 			fmt.Println("\n[Enter]キーで次へ...")
@@ -149,7 +149,7 @@ func printTable(phase string, p1, p2 *Player, board []Card, pot int) {
 
 	// CPUの手札（裏向き表示）
 	fmt.Printf("CPU  (Chips: $%d)\n", p2.Chips)
-	printHiddenHandAA(2) 
+	printHiddenHandAA(2)
 
 	fmt.Println("\n------------- BOARD -------------")
 	// 場のカード
@@ -163,7 +163,7 @@ func printTable(phase string, p1, p2 *Player, board []Card, pot int) {
 	// 自分の手札
 	fmt.Printf("YOU  (Chips: $%d)\n", p1.Chips)
 	printCardsAA(p1.Hand)
-	
+
 	fmt.Println("========================================")
 }
 
@@ -178,7 +178,7 @@ func bettingRound(p1, p2 *Player, pot *int, phase string, board []Card) bool {
 		p2.Chips += *pot
 		return false
 	}
-	
+
 	if amount > 0 {
 		p1.Chips -= amount
 		*pot += amount
@@ -190,7 +190,7 @@ func bettingRound(p1, p2 *Player, pot *int, phase string, board []Card) bool {
 	// CPUの行動（AI）
 	// ★ここでAIに board を渡しています
 	cpuAction, cpuAmount := getCpuAction(p2, *pot, amount, phase, board)
-	
+
 	if cpuAction == "FOLD" {
 		fmt.Println("CPUが降りました！あなたの勝ちです！")
 		p1.Chips += *pot
@@ -214,7 +214,7 @@ func getPlayerAction(p *Player, currentPot int) (string, int) {
 		fmt.Print("アクションを選択 [c:Check/Call, r:Raise $50, f:Fold] > ")
 		scanner.Scan()
 		input := strings.TrimSpace(scanner.Text())
-		
+
 		switch input {
 		case "c":
 			return "CALL", 0 // 今回は簡単のためコール額計算は省略し0とする
@@ -236,13 +236,13 @@ func getPlayerAction(p *Player, currentPot int) (string, int) {
 // ★引数に board []Card を追加しました
 func getCpuAction(p *Player, pot int, playerBet int, phase string, board []Card) (string, int) {
 	fmt.Print("CPUが思考中...")
-	
+
 	// プレイヤーのベット額に合わせて「コールに必要な額」を計算
-	toCall := playerBet 
+	toCall := playerBet
 
 	// ★ここでAIロジック（DecideCpuAction）を呼び出すときに board を渡します
 	action, amount := DecideCpuAction(p.Hand, board, pot, toCall)
-	
+
 	// ちょっとウェイトを入れて「考えている感」を出す
 	time.Sleep(1 * time.Second)
 	fmt.Println(" 決定！")
@@ -252,19 +252,19 @@ func getCpuAction(p *Player, pot int, playerBet int, phase string, board []Card)
 
 func showdown(p1, p2 *Player, board []Card, pot int) {
 	fmt.Println("\n\n################ SHOW DOWN ################")
-	
+
 	p1Name, p1Rank, p1Score := EvaluateHand(p1.Hand, board)
 	p2Name, p2Rank, p2Score := EvaluateHand(p2.Hand, board)
 
 	fmt.Printf("YOU: 【%s】\n", p1Name)
 	printCardsAA(p1.Hand)
-	
+
 	fmt.Printf("CPU: 【%s】\n", p2Name)
 	printCardsAA(p2.Hand)
 
 	fmt.Println("###########################################")
 
-    // ... (以下の勝敗判定ロジックはそのまま) ...
+	// ... (以下の勝敗判定ロジックはそのまま) ...
 	// 勝敗判定
 	win := false
 	draw := false
